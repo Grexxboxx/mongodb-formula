@@ -1,0 +1,12 @@
+{{ pattern }} {
+    daily
+    missingok
+    rotate {{ days }}
+    compress
+    dateext
+    notifempty
+    sharedscripts
+    postrotate
+        /bin/kill -SIGUSR1 `cat {{ pidfile }} 2> /dev/null` 2> /dev/null || true
+    endscript
+}

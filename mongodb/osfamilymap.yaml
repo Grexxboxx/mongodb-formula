@@ -1,0 +1,34 @@
+###  mongodb/osfamilymap.yaml
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+
+Debian:
+  server:
+    #deb unofficial packages conflict with MongoDB offical supported packages, so ..
+    use_repo: True
+
+Redhat:
+  pip: python2-pip
+  server:
+    use_repo: True
+    user: mongod
+    group: mongod
+
+Suse:
+  server:
+    url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-suse12-RELEASE.tgz
+  bic:
+    url: https://info-mongodb-com.s3.amazonaws.com/mongodb-bi/v2/mongodb-bi-linux-x86_64-suse12-vRELEASE.tgz
+
+MacOS:
+  userhome: /users
+  server:
+    use_archive: True
+      {% if grains.os == 'MacOS' %}
+    user: {{ salt['pillar.get']('mongodb:user', salt['cmd.run']("stat -f '%Su' /dev/console")) }}
+    group: {{ salt['pillar.get']('mongodb:group', salt['cmd.run']("stat -f '%Sg' /dev/console")) }}
+      {% endif %}
+    url: https://fastdl.mongodb.org/osx/mongodb-osx-ssl-x86_64-RELEASE.tgz
+  bic:
+    url: https://info-mongodb-com.s3.amazonaws.com/mongodb-bi/v2/mongodb-bi-osx-x86_64-vRELEASE.tgz
+

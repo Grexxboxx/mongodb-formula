@@ -1,0 +1,47 @@
+###  mongodb/codenamemap.yaml
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+
+{% macro distro_codename(name, code, ostag, comp) %}
+{{ codename|default(name, true) }}:
+  server:
+    repo:
+      gpgcheck: 1
+    {%- if osfamily in ('Debian', 'Ubuntu',) %}
+
+      name: deb http://repo.mongodb.org/apt/{{ os }} {{ code }}/mongodb-org/RELEASE {{ comp }}
+      file: /etc/apt/sources.list.d/mongodb-org-RELEASE.list
+      keyid: EA312927
+      keyserver: keyserver.ubuntu.com
+      disabled: 0
+
+    {%- else %}
+
+      baseurl: https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/RELEASE/$basearch/
+      name: mongodb-org-RELEASE
+      humanname: MongoDB RELEASE Repository
+      gpgkey: https://www.mongodb.org/static/pgp/server-RELEASE.asc
+
+    {%- endif %}
+    url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-{{ ostag }}-RELEASE.tgz
+
+  bic:
+    url: https://info-mongodb-com.s3.amazonaws.com/mongodb-bi/v2/mongodb-bi-linux-x86_64-{{ ostag }}-vRELEASE.tgz
+
+{% endmacro %}
+
+#Debian
+{{ distro_codename('debian', 'precise', 'debian81', 'main') }}
+{{ distro_codename('debian', 'jessie',  'debian81', 'main') }}
+{{ distro_codename('debian', 'stretch', 'debian92', 'main') }}
+
+#Ubuntu
+{{ distro_codename('ubuntu', 'trusty', 'ubuntu1404', 'multiverse') }}
+{{ distro_codename('ubuntu', 'xenial', 'ubuntu1604', 'multiverse') }}
+{{ distro_codename('ubuntu', 'bionic', 'ubuntu1804', 'multiverse') }}
+{{ distro_codename('ubuntu', 'cosmic', 'ubuntu1804', 'multiverse') }}
+
+#Redhat
+{{ distro_codename('rhel', 'maipo',    'rhel70') }}
+{{ distro_codename('rhel', 'santiago', 'rhel62') }}
+

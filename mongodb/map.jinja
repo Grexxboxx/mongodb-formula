@@ -1,15 +1,67 @@
 {% import_yaml "mongodb/defaults.yaml" as defaults %}
 {% import_yaml "mongodb/osmap.yaml" as osmap %}
-{% import_yaml "mongodb/codenamemap.yaml" as codemap %}
+{% import_yaml "mongodb/osfamilymap.yaml" as osfamilymap %}
+{% import_yaml "mongodb/oscodemap.yaml" as oscodemap %}
 
-{% set distro_map = salt['pillar.get'](
-    'mongodb:lookup',
-    default=salt['grains.filter_by'](osmap),
-    merge=True) %}
-{% set code_map = salt['grains.filter_by'](codemap, grain='oscodename') %}
+{% set m = salt['grains.filter_by'](
+    defaults,
+    merge=salt['grains.filter_by'](
+        osfamilymap,
+        grain='os_family',
+        merge=salt['grains.filter_by'](
+            osmap,
+            grain='os',
+                merge=salt['grains.filter_by'](
+                    ososcodemap,
+                    grain='oscodename',
+                    merge=salt['pillar.get']('mongodb', {}),
+                base='mongodb',
+                ),
+            base='mongodb',
+            ),
+        base='mongodb',
+        ),
+    base='mongodb',
+)%}
+#### Archives only
+{%- do m.server.update({ 'arcname': mongodb.server.url.split('/')[-1] }) %}
+{%- do m.server.update({ 'dirname': mongodb.server.arcname|replace('.tgz', '') %}
+{%- do m.bic.update({ 'arcname': mongodb.bic.url.split('/')[-1] }) %}
+{%- do m.bic.update({ 'dirname': mongodb.bic.arcname|replace('.tgz', '')|replace('.zip', '') %}
 
-{% do defaults.mongodb.update(distro_map) %}
-{% do defaults.mongodb.update(code_map) %}
 
-{% set mdb = salt['pillar.get']('mongodb', default=defaults.mongodb, merge=True) %}
-{% set ms = salt['pillar.get']('mongos', default=defaults.mongos, merge=True) %}
+{## BACKWARDS COMPATIBILITY - AVOID BREAKING EXISTING PILLARS ##}
+{## Remove after 1/Oct/2019 ##}
+
+{%- set legacy = salt['pillar.get']('mongodb:lookup', {}) %}
+{%- do m.update( legacy ) if legacy %}
+{%- do m.server.update( legacy ) if legacy %}
+
+{%- set legacy = salt['pillar.get']('mongodb:mongod_settings', {}) %}
+{%- do m.server.mongod.conf_yaml.update( legacy ) if legacy %}
+
+{%- set legacy = salt['pillar.get']('mongodb:mongos', {}) %}
+{%- do m.server.mongos.update({
+     'use_repo': {{ m.server.use_repo if "use_repo" not in legacy else legacy.use_repo }},
+     'package' : {{ m.package if "mongodb_package"  not in legacy else legacy.mongodb_package }}}) %}
+{%- do m.server.mongos.conf_yaml.systemLog.path.update({
+     'log_path': {{ m.server.mongos.conf_yaml.systemLog.path if "log_path" not in legacy else legacy.log_path }}}) %}
+
+{%- set legacy = salt['pillar.get']('mongodb', {}) %}
+{%- do m.server.update({
+     'package': {{ m.server.package if "mongodb_package" not in legacy else legacy.mongodb_package }},
+     'version': {{ m.server.version if "mongodb_version" not in legacy else legacy.mongodb_version }},
+     'use_repo': {{ m.server.use_repo if "use_repo" not in legacy else legacy.use_repo }},
+     'user'   : {{ m.server.user  if "mongodb_user" not in legacy else legacy.mongodb_user }},
+     'group'  : {{ m.server.group if "mongodb_group" not in legacy else legacy.mongodb_group }}}) %}
+
+{%- do m.server.mongod.service.update( m.server.mongod.service if "mongod" not in legacy else legacy.mongod ) %}
+{%- do m.server.mongod.conf_path.update( m.server.mongod.conf_path if "conf_path" not in legacy else legacy.conf_path ) %}
+{%- do m.server.mongod.conf_yaml.systemLog.update({
+     'path': {{ m.server.mongod.conf_yaml.systemLog.path if "log_path" not in legacy else legacy.log_path }}}) %}
+{%- do m.server.mongod.conf_yaml.storage.update({
+     'dbPath': {{ m.server.mongod.conf_yaml.storage.dbPath if "db_path" not in legacy else legacy.db_path }}}) %}
+
+
+### KEEP!!!! ####
+{%- set mongodb = m %}
